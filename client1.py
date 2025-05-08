@@ -1,12 +1,12 @@
 import socket
 import sys
 
-class Client:
+class TupleSpaceClient:
     def __init__(self, host, port, request_file):
         self.host = host
         self.port = port
         self.request_file = request_file
-
+    
     def run(self):
         try:
             with open(self.request_file, 'r') as file:
@@ -99,5 +99,6 @@ if __name__ == "__main__":
         sys.exit(1)
     
     request_file = sys.argv[3]
-    client = Client(host, port, request_file)
+    
+    client = TupleSpaceClient(host, port, request_file)
     client.run()
