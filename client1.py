@@ -22,6 +22,17 @@ class Client:
                 print(f"Connected to server at {self.host}:{self.port}")
             except ConnectionRefusedError:
                 print(f"Could not connect to server at {self.host}:{self.port}")
+        
+        for line in requests:
+            line = line.strip()
+            if line.startswith("PUT"):
+                parts = line.split(' ', 2)
+                if len(parts) == 3:
+                    _, key, value = parts
+                    msg = f"{len(key)+len(value)+4:03d} P {key} {value}"
+                    sock.sendall(msg.encode())
+                    response = sock.recv(1024).decode()
+                    print(f"{line}: {response}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
