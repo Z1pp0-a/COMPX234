@@ -35,26 +35,31 @@ class Server:
             time.sleep(10)
             print(f"\nServer Stats: {self.stats}\n")
 
-    def handle_client(self, client_socket):
-        try:
-            while True:
-                data = client_socket.recv(1024).decode()
-                if not data:
-                    break
+def handle_client(self, client_socket):
+    try:
+        while True:
+            data = client_socket.recv(1024).decode('utf-8')
+            if not data:
+                break
+            
+            try:
+                msg_size = int(data[:3])
+                cmd = data[4]
+                remaining = data[5:].strip()
                 
-                cmd, *parts = data.split(' ', 2)
-                if cmd == 'P' and len(parts) == 2:
-                    response = self.handle_put(*parts)
-                elif cmd == 'G':
-                    response = self.handle_get(parts[0])
-                elif cmd == 'R':
-                    response = self.handle_read(parts[0])
-                else:
-                    response = "000 ERR invalid command"
-                
-                client_socket.send(response.encode())
-        finally:
-            client_socket.close()
+                if cmd == 'P':
+                    parts = remaining.split(' ', 1)
+                    if len(parts) == 2:
+                        response = self.handle_put(*parts)
+                    else:
+                        response = "000 ERR invalid PUT format"
+                # ...类似处理GET/READ...
+            except Exception:
+                response = "000 ERR invalid request"
+            
+            client_socket.send(response.encode())
+    finally:
+        client_socket.close()
 
     def handle_put(self, key, value):
         with self.lock:
