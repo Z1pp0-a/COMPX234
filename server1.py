@@ -21,6 +21,17 @@ class Server:
         finally:
             self.server_socket.close()
 
+    def handle_client(self, client_socket):
+        try:
+            while True:
+                data = client_socket.recv(1024).decode('utf-8')
+                if not data:
+                    break
+                response = "000 ERR not implemented"  # 临时响应
+                client_socket.send(response.encode())
+        finally:
+            client_socket.close()
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 2:
