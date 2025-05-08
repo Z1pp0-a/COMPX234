@@ -7,6 +7,14 @@ class Server:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.running = True
+        self.stats = {
+            'total_clients': 0,
+            'total_operations': 0,
+            'total_reads': 0,
+            'total_gets': 0,
+            'total_puts': 0,
+            'total_errors': 0
+        }
 
     def start(self):
         self.server_socket.bind(('0.0.0.0', self.port))
@@ -20,6 +28,12 @@ class Server:
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
         finally:
             self.server_socket.close()
+        threading.Thread(target=self.report_stats, daemon=True).start()
+
+    def report_stats(self):
+        while self.running:
+            time.sleep(10)
+            print(f"\nServer Stats: {self.stats}\n")
 
     def handle_client(self, client_socket):
         try:
@@ -44,6 +58,8 @@ class Server:
 
     def handle_put(self, key, value):
         with self.lock:
+            self.stats['total_operations'] += 1
+            self.stats['total_puts'] += 1
             if key in self.tuple_space:
                 return "024 ERR key already exists"
             self.tuple_space[key] = value
