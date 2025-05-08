@@ -28,10 +28,17 @@ class Server:
                 if not data:
                     break
                 
-                if data.startswith('P '):  # 简单PUT协议
-                    _, key, value = data.split(' ', 2)
-                    response = self.handle_put(key, value)
-                    client_socket.send(response.encode())
+                cmd, *parts = data.split(' ', 2)
+                if cmd == 'P' and len(parts) == 2:
+                    response = self.handle_put(*parts)
+                elif cmd == 'G':
+                    response = self.handle_get(parts[0])
+                elif cmd == 'R':
+                    response = self.handle_read(parts[0])
+                else:
+                    response = "000 ERR invalid command"
+                
+                client_socket.send(response.encode())
         finally:
             client_socket.close()
 
@@ -41,6 +48,20 @@ class Server:
                 return "024 ERR key already exists"
             self.tuple_space[key] = value
             return f"{len(key)+len(value)+18:03d} OK ({key}, {value}) added"
+        
+    def handle_get(self, key):
+        with self.lock:
+            if key not in self.tuple_space:
+                return "024 ERR key does not exist"
+            value = self.tuple_space.pop(key)
+            return f"{len(key)+len(value)+21:03d} OK ({key}, {value}) removed"
+
+    def handle_read(self, key):
+        with self.lock:
+            if key not in self.tuple_space:
+                return "024 ERR key does not exist"
+            value = self.tuple_space[key]
+            return f"{len(key)+len(value)+18:03d} OK ({key}, {value}) read"
 
 if __name__ == "__main__":
     import sys
