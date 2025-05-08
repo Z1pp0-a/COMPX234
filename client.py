@@ -6,6 +6,7 @@ class Client:
         self.host = host
         self.port = port
         self.request_file = request_file
+
     def run(self):
         try:
             with open(self.request_file, 'r') as file:
@@ -23,67 +24,41 @@ class Client:
                     line = line.strip()
                     if not line:
                         continue
+                        
+                    operation = line.split(' ', 1)[0]
                     
-                    # Parse the request
-                    try:
+                    if operation == "PUT":
                         parts = line.split(' ', 2)
-                        if len(parts) < 2:
-                            print(f"Invalid request: {line}")
-                            continue
-                        
-                        operation = parts[0]
-                        key = parts[1]
-                        
-                        if operation == "PUT":
-                            if len(parts) != 3:
-                                print(f"Invalid PUT request: {line}")
-                                continue
-                            value = parts[2]
-                            if len(key) + len(value) > 970:
-                                print(f"Request too long, ignoring: {line}")
-                                continue
-                            request_msg = f"{len(operation)+len(key)+len(value)+4:03d} P {key} {value}"
-                        elif operation == "GET":
-                            if len(key) > 999:
-                                print(f"Key too long, ignoring: {line}")
-                                continue
-                            request_msg = f"{len(key)+4:03d} G {key}"
-                        elif operation == "READ":
-                            if len(key) > 999:
-                                print(f"Key too long, ignoring: {line}")
-                                continue
-                            request_msg = f"{len(key)+4:03d} R {key}"
+                        if len(parts) == 3:
+                            _, key, value = parts
+                            msg = f"{len(key)+len(value)+4:03d} P {key} {value}"
+                            sock.sendall(msg.encode())
+                            response = sock.recv(1024).decode()
+                            print(f"{line}: {response}")
                         else:
-                            print(f"Unknown operation: {operation}")
-                            continue
+                            print(f"Invalid PUT request: {line}")
+                            
+                    elif operation == "GET":
+                        key = line.split(' ', 1)[1]
+                        msg = f"{len(key)+4:03d} G {key}"
+                        sock.sendall(msg.encode())
+                        response = sock.recv(1024).decode()
+                        print(f"{line}: {response}")
                         
-                        # Send request and get response
-                        sock.sendall(request_msg.encode('utf-8'))
-                        response = sock.recv(1024).decode('utf-8')
+                    elif operation == "READ":
+                        key = line.split(' ', 1)[1]
+                        msg = f"{len(key)+4:03d} R {key}"
+                        sock.sendall(msg.encode())
+                        response = sock.recv(1024).decode()
+                        print(f"{line}: {response}")
                         
-                        # Parse and display response
-                        if len(response) >= 3:
-                            try:
-                                msg_size = int(response[:3])
-                                status = response[4:7]
-                                message = response[7:].strip()
-                                
-                                if status == "OK ":
-                                    print(f"{line}: OK {message}")
-                                elif status == "ERR":
-                                    print(f"{line}: ERR {message}")
-                                else:
-                                    print(f"Unknown response: {response}")
-                            except ValueError:
-                                print(f"Invalid response format: {response}")
-                        else:
-                            print(f"Invalid response: {response}")
-                    except Exception as e:
-                        print(f"Error processing request '{line}': {e}")
+                    else:
+                        print(f"Unknown operation: {operation}")
+                        
             except ConnectionRefusedError:
                 print(f"Could not connect to server at {self.host}:{self.port}")
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
@@ -98,6 +73,5 @@ if __name__ == "__main__":
         sys.exit(1)
     
     request_file = sys.argv[3]
-    
     client = Client(host, port, request_file)
     client.run()
