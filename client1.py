@@ -15,12 +15,19 @@ class Client:
         except IOError:
             print(f"Error: Could not open file {self.request_file}")
             return
+        
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            try:
+                sock.connect((self.host, self.port))
+                print(f"Connected to server at {self.host}:{self.port}")
+            except ConnectionRefusedError:
+                print(f"Could not connect to server at {self.host}:{self.port}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python client.py <host> <port> <request_file>")
         sys.exit(1)
     Client(sys.argv[1], int(sys.argv[2]), sys.argv[3])
-    
+
     client = Client(host, port, request_file)
     client.run()
