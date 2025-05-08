@@ -24,13 +24,23 @@ class Server:
     def handle_client(self, client_socket):
         try:
             while True:
-                data = client_socket.recv(1024).decode('utf-8')
+                data = client_socket.recv(1024).decode()
                 if not data:
                     break
-                response = "000 ERR not implemented"  # 临时响应
-                client_socket.send(response.encode())
+                
+                if data.startswith('P '):  # 简单PUT协议
+                    _, key, value = data.split(' ', 2)
+                    response = self.handle_put(key, value)
+                    client_socket.send(response.encode())
         finally:
             client_socket.close()
+
+    def handle_put(self, key, value):
+        with self.lock:
+            if key in self.tuple_space:
+                return "024 ERR key already exists"
+            self.tuple_space[key] = value
+            return f"{len(key)+len(value)+18:03d} OK ({key}, {value}) added"
 
 if __name__ == "__main__":
     import sys
