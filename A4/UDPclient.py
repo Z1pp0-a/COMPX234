@@ -8,4 +8,17 @@ class UDPFileClient:
         self.host = host
         self.port = port
         self.request_file = request_file
- 
+
+        def run(self):
+            try:
+               with open(self.request_file, 'r') as file:
+                    filenames = file.readlines()
+            except IOError:
+                print(f"Error: Could not open file {self.request_file}")
+                return
+
+            for filename in filenames:
+                filename = filename.strip()
+                if not filename:
+                    continue
+                self.download_file(filename)
