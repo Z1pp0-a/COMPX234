@@ -37,4 +37,29 @@ class  UDPFileServer:
             print(f"Error handling client:{e}")
         finally:
             client_socket.close()
-            
+
+    def transfer_file(self,filename,file_size,udp_port,client_addr):
+        udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM) 
+        udp_socket.bind(('0.0.0.0',udp_port))
+        try:
+            with open(filename, 'rb') as file:
+                while Ture:
+                   data, addr = udp_socket.recvfrom(1024)
+                   data = data.decode('utf-8')
+                   if data.startswith("FILE"):
+                       parts = data.split(" ")
+                       start = int(parts[3])
+                       end = int(parts[5])
+                       file.seek(start)
+                       chunk = file.read(end - start)
+                       encode_data = base64.b64encode(chunk).decode('utf-8')
+                       response = f"FILE{filename}OK START {start} END {end} DATA {encode_data}"
+                       udp_socket.sendto(response.encode('utf-8'),client_addr)
+                   elif data.startswith("FILE" + filename + "CLOSE"):
+                       response = f"FILE{filename} CLOSE_OK"
+                       udp_socket.sendto(response.encode('utf-8'),client_addr)
+                       break
+        except Exception as e:
+            print(f"Error transferring file: {e}")
+        finally:
+            udp_socket.close()
