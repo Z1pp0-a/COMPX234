@@ -89,3 +89,20 @@ class UDPFileClient:
                     time.sleep(0.5 * retries)
 
             udp_socket.close()
+    
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("Usage: python3 UDPclient.py <host> <port> <request_file>")
+        sys.exit(1)
+
+    host = sys.argv[1]
+    try:
+        port = int(sys.argv[2])
+    except ValueError:
+        print("Error: Port must be a number")
+        sys.exit(1)
+
+    request_file = sys.argv[3]
+
+    client = UDPFileClient(host, port, request_file)
+    client.run()
