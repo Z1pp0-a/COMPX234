@@ -12,3 +12,9 @@ class  UDPFileServer:
         self.server_socket.listen(5)
         print(f"SErver started on port {self.port}")
 
+    def start(self):
+        while True:
+            client_socket, addr = self.server_socket.accept()
+            print(f"New connection from{addr}")
+            client_thread = threading.Thread(target=self.handle_client,args=(client_socket,))
+            client_thread.start()
