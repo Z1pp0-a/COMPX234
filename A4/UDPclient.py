@@ -41,3 +41,51 @@ class UDPFileClient:
                 print(f"Error downloading {filename}: {e}")
             finally:
                 tcp_socket.close()        
+
+        def receive_file(self, filename, file_size, udp_port, server_addr):
+            udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            udp_socket.settimeout(1)
+            start = 0
+            end = min(1024, file_size)
+            with open(filename, 'wb') as file:
+                while start < file_size:
+                    request = f"FILE {filename} GET START {start} END {end}"
+                    retries = 0
+                    while True:
+                        try:
+                            udp_socket.sendto(request.encode('utf-8'), (server_addr[0], udp_port))
+                            response, _ = udp_socket.recvfrom(4096)
+                            response = response.decode('utf-8')
+                            if response.startswith("FILE " + filename + " OK "):
+                                parts = response.split(" ")
+                                start = int(parts[3])
+                                end = int(parts[5])
+                                data = base64.b64decode(parts[7])
+                                file.write(data)
+                                break
+                        except socket.timeout:
+                            retries += 1
+                            if retries > 5:
+                                print(f"Failed to download {filename} after multiple retries")
+                                return
+                            time.sleep(0.5 * retries)
+                    start = end
+                    end = min(end + 1024, file_size)
+
+            close_request = f"FILE {filename} CLOSE"
+            retries = 0
+            while True:
+                try:
+                    udp_socket.sendto(close_request.encode('utf-8'), (server_addr[0], udp_port))
+                    response, _ = udp_socket.recvfrom(1024)
+                    response = response.decode('utf-8')
+                    if response.startswith("FILE " + filename + " CLOSE_OK"):
+                        break
+                except socket.timeout:
+                    retries += 1
+                    if retries > 5:
+                        print(f"Failed to close connection for {filename} after multiple retries")
+                        break
+                    time.sleep(0.5 * retries)
+
+            udp_socket.close()
