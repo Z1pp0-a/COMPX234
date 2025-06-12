@@ -63,3 +63,17 @@ class  UDPFileServer:
             print(f"Error transferring file: {e}")
         finally:
             udp_socket.close()
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) != 2:
+        print("Usage: python3 UDPserver.py <port>")
+        sys.exit(1)
+    try:
+        port = int(sys.argv[1])
+    except ValueError:
+        print("Error: Port must be a number")
+        sys.exit(1)
+
+    server = UDPFileServer(port)
+    server.start()
